@@ -1,64 +1,205 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🧩 Matrix AI Code Assist</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}body{background:linear-gradient(135deg,#0f0f23,#1a1a3e);color:#e2e2e2;font-family:sans-serif;padding:20px;min-height:100vh}.dashboard{max-width:800px;margin:0 auto}header{text-align:center;padding:40px 20px;background:rgba(255,255,255,0.1);border-radius:20px;margin-bottom:30px}h1{font-size:2.5rem;color:#4ade80}.tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px}.tab{flex:1;padding:15px;background:rgba(255,255,255,0.1);border:none;color:white;border-radius:10px;cursor:pointer;font-size:14px}.tab.active{background:#4ade80;color:black}.tab-content{display:none;background:rgba(255,255,255,0.05);padding:20px;border-radius:15px;margin-bottom:20px}.tab-content.active{display:block}textarea,input{width:100%;padding:15px;background:rgba(0,0,0,0.5);border:1px solid #4ade80;border-radius:10px;color:white;font-family:monospace;font-size:14px;margin-bottom:15px;box-sizing:border-box}textarea{height:250px;resize:vertical}button{padding:12px 20px;background:#4ade80;color:black;border:none;border-radius:10px;cursor:pointer;margin:5px;font-weight:bold}.button-row{display:flex;flex-wrap:wrap;gap:10px}.status{padding:15px;background:rgba(0,0,0,0.4);border-radius:10px;font-size:14px}.output{background:rgba(74,222,128,0.1);padding:15px;border-radius:10px;border-left:4px solid #4ade80;margin-top:10px;white-space:pre-wrap;font-family:monospace}#editor{height:300px!important;border:1px solid #4ade80!important;border-radius:10px!important;background:rgba(0,0,0,0.7)!important}@media(max-width:600px){.tabs{flex-direction:column}.tab{flex:none}}
-    </style>
+    <title>🧩 Matrix AI - File Upload + Chat</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box}body{background:linear-gradient(135deg,#0f0f23,#1a1a3e);color:#e2e2e2;font-family:sans-serif;padding:20px;min-height:100vh}.dashboard{max-width:900px;margin:0 auto}header{text-align:center;padding:40px 20px;background:rgba(255,255,255,0.1);border-radius:20px;margin-bottom:30px}h1{font-size:2.5rem;color:#4ade80}.tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px}.tab{flex:1;padding:15px;background:rgba(255,255,255,0.1);border:none;color:white;border-radius:10px;cursor:pointer;font-size:14px}.tab.active{background:#4ade80;color:black}.tab-content{display:none;background:rgba(255,255,255,0.05);padding:25px;border-radius:15px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.1)}.tab-content.active{display:block}textarea,input{width:100%;padding:15px;background:rgba(0,0,0,0.5);border:1px solid #4ade80;border-radius:10px;color:white;font-family:monospace;font-size:14px;margin-bottom:15px;box-sizing:border-box}textarea{height:200px;resize:vertical}button{padding:12px 20px;background:#4ade80;color:black;border:none;border-radius:10px;cursor:pointer;margin:5px;font-weight:bold;transition:all .3s}button:hover{transform:scale(1.05);box-shadow:0 5px 15px rgba(74,222,128,.4)}.button-row{display:flex;flex-wrap:wrap;gap:10px}.status{padding:15px;background:rgba(0,0,0,0.4);border-radius:10px;font-size:14px}.output{background:rgba(74,222,128,0.2);padding:15px;border-radius:10px;border-left:4px solid #4ade80;margin-top:10px;white-space:pre-wrap;font-family:monospace;max-height:300px;overflow:auto}.error{background:rgba(239,68,68,0.2);border-left-color:#ef4444;color:#ef4444}.file-upload{display:flex;flex-direction:column;gap:15px}.file-input-wrapper{position:relative;display:inline-block;width:100%}.file-input-wrapper input[type=file]{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer}.file-label{display:inline-block;padding:15px;background:rgba(74,222,128,0.2);border:2px dashed #4ade80;border-radius:10px;text-align:center;cursor:pointer;width:100%;transition:all .3s}.file-label:hover{background:rgba(74,222,128,0.4)}.file-info{margin-top:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;font-family:monospace;font-size:12px;max-height:100px;overflow:auto}@media(max-width:600px){.tabs{flex-direction:column}.tab{flex:none}}</style>
 </head>
 <body>
     <div class="dashboard">
-        <header><h1>🧩 Matrix AI Code Assist</h1><p>Working tabs + AI + Sandbox!</p></header>
+        <header><h1>🧩 Matrix AI Code Assist</h1><p>📁 File Upload + AI Chat + Infinite Context</p></header>
         
         <div class="tabs">
-            <button class="tab active" onclick="showTab('code')">💻 Code</button>
-            <button class="tab" onclick="showTab('ai')">🤖 AI</button>
-            <button class="tab" onclick="showTab('sandbox')">🐍 Sandbox</button>
+            <button class="tab active" onclick="showTab('upload')">📁 Upload</button>
+            <button class="tab" onclick="showTab('ai')">🤖 AI Chat</button>
             <button class="tab" onclick="showTab('context')">🧠 Context</button>
+            <button class="tab" onclick="showTab('sandbox')">🐍 Sandbox</button>
         </div>
 
-        <div id="code" class="tab-content active">
-            <select id="lang" onchange="setLang(this.value)">
-                <option value="javascript">JavaScript</option>
-                <option value="python">Python</option>
-            </select>
-            <textarea id="code-editor">// Test code here!
-console.log('Matrix AI working!');
-let app = '🚀';</textarea>
-            <div class="button-row">
-                <button onclick="aiSuggest()">🤖 AI Suggest</button>
-                <button onclick="testCode()">🧪 Test</button>
+        <!-- FILE UPLOAD TAB -->
+        <div id="upload" class="tab-content active">
+            <h3>📁 Upload Codebase/Project Files</h3>
+            <div class="file-upload">
+                <div class="file-input-wrapper">
+                    <input type="file" id="file-input" multiple accept=".js,.ts,.py,.html,.css,.json,.txt,.md">
+                    <label for="file-input" class="file-label">📁 Click to upload files<br><small>Supports JS, Python, HTML, CSS, JSON, TXT, MD</small></label>
+                </div>
+                <div id="file-list" class="file-info">No files selected</div>
+                <button onclick="uploadFiles()">💾 Save to Session Memory</button>
             </div>
-            <div id="code-output" class="output">Ready...</div>
+            <div id="upload-status" class="output">Ready to upload...</div>
         </div>
 
+        <!-- AI CHAT TAB -->
         <div id="ai" class="tab-content">
-            <input id="ai-prompt" placeholder="Ask AI: 'create login form'">
+            <input id="ai-input" placeholder="Ask about your uploaded code: 'refactor auth', 'add login'...">
             <div class="button-row">
-                <button onclick="aiGenerate()">✨ Generate Code</button>
+                <button onclick="chatAI()">💬 Ask Matrix AI</button>
+                <button onclick="testAI()">🧪 Test Connection</button>
             </div>
-            <div id="ai-output" class="output">AI ready...</div>
+            <div id="ai-output" class="output">AI ready! Upload files first for context-aware responses</div>
         </div>
 
-        <div id="sandbox" class="tab-content">
-            <textarea id="py-code">print("Hello Matrix Sandbox!")</textarea>
-            <button onclick="runSandbox()">🐍 Run Python</button>
-            <div id="sandbox-output" class="output">Python ready...</div>
-        </div>
-
+        <!-- CONTEXT TAB -->
         <div id="context" class="tab-content">
-            <textarea id="context-text" placeholder="Paste entire codebase here..."></textarea>
+            <textarea id="context-text" placeholder="Current context will appear here..."></textarea>
             <div class="button-row">
-                <button onclick="saveContext()">💾 Save Context</button>
-                <button onclick="loadContext()">📂 Load</button>
+                <button onclick="loadContext()">📂 Load Context</button>
+                <button onclick="clearContext()">🗑️ Clear All</button>
             </div>
-            <div id="context-status" class="output">Context memory ready</div>
+            <div id="context-status" class="output">No context loaded (0 chars)</div>
         </div>
 
-        <div class="status">Session: <span id="session-id">matrix-test</span> | Status: <span id="status">Ready</span></div>
+        <!-- SANDBOX TAB -->
+        <div id="sandbox" class="tab-content">
+            <textarea id="py-code">print("Hello from Matrix Sandbox!")
+print("Your context is available to AI!")</textarea>
+            <button onclick="runSandbox()">🐍 Run Python</button>
+            <div id="sandbox-output" class="output">Click Run Python to test sandbox</div>
+        </div>
+
+        <div class="status">
+            Session: <strong id="session-id">matrix-demo</strong> | 
+            Files: <strong id="file-count">0</strong> | 
+            Context: <strong id="context-size">0 chars</strong>
+        </div>
     </div>
     <script>
-let currentTab='code';let sessionId='matrix-'+Date.now();function showTab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector(`[onclick="showTab('${tab}')"]`).classList.add('active');document.getElementById(tab).classList.add('active');currentTab=tab;document.getElementById('status').textContent=tab+' active';}async function aiSuggest(){document.getElementById('code-output').textContent='🤖 AI thinking...';document.getElementById('code-editor').value='// AI Suggestion:\nconsole.log("AI improved your code! 👾");\nlet matrixAI = {\n  suggest: true,\n  context: "infinite",\n  working: "perfect"\n};\nconsole.log(matrixAI);';document.getElementById('code-output').textContent='✅ AI Suggestion applied!';}async function testCode(){document.getElementById('code-output').textContent='🧪 Testing...';setTimeout(()=>{document.getElementById('code-output').innerHTML='✅ <strong>Code tested successfully!</strong><br>Output: Matrix AI working perfectly! 🚀';},1000);}async function aiGenerate(){let prompt=document.getElementById('ai-prompt').value;if(!prompt)prompt='create a button';document.getElementById('ai-output').textContent='✨ AI generating...';setTimeout(()=>{document.getElementById('ai-output').innerHTML=`✅ AI Generated:\n\`\`\`html\n<button onclick="alert('Matrix AI!')">\n  ${prompt}\n</button>\n\`\`\``;},1500);}async function runSandbox(){document.getElementById('sandbox-output').textContent='🐍 Running Python...';setTimeout(()=>{document.getElementById('sandbox-output').innerHTML='🐍 Python Output:\nHello Matrix Sandbox!\n✅ Sandbox working!';},1000);}async function saveContext(){let ctx=document.getElementById('context-text').value;document.getElementById('context-status').innerHTML=`💾 Saved <strong>${ctx.length}</strong> chars to Session Memory!`;document.getElementById('status').textContent='Context saved';}async function loadContext(){document.getElementById('context-status').textContent='📂 Loading context...';setTimeout(()=>{document.getElementById('context-status').innerHTML='📂 Context loaded from Durable Object! (Demo)';},1000);}function setLang(lang){document.getElementById('status').textContent=lang+' selected';}document.getElementById('session-id').textContent=sessionId;showTab('code');
+let sessionId = 'matrix-' + Date.now();
+let uploadedFiles = [];
+let currentTab = 'upload';
+
+const MATRIX_URL = 'https://matrix.ai-n.workers.dev';
+const SESSION_URL = 'https://session.ai-n.workers.dev';
+
+function showTab(tab) {
+    document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(tab).classList.add('active');
+    currentTab = tab;
+}
+
+document.getElementById('file-input').addEventListener('change', function(e) {
+    uploadedFiles = Array.from(e.target.files);
+    let fileList = uploadedFiles.map(f => `${f.name} (${(f.size/1024).toFixed(1)}KB)`).join('\n');
+    document.getElementById('file-list').textContent = uploadedFiles.length ? 
+        `Selected ${uploadedFiles.length} files:\n${fileList}` : 'No files selected';
+    document.getElementById('file-count').textContent = uploadedFiles.length;
+});
+
+async function uploadFiles() {
+    if (!uploadedFiles.length) {
+        document.getElementById('upload-status').innerHTML = '<span class="error">No files selected!</span>';
+        return;
+    }
+    
+    document.getElementById('upload-status').textContent = '📁 Uploading to Session Memory...';
+    
+    let context = '';
+    for (let file of uploadedFiles) {
+        const text = await file.text();
+        context += `\n\n--- ${file.name} (${(file.size/1024).toFixed(1)}KB) ---\n${text}`;
+    }
+    
+    try {
+        const response = await fetch(`${SESSION_URL}/session/context`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                sessionId, 
+                context: {codebase: context, files: uploadedFiles.length, uploadedAt: new Date().toISOString()}
+            })
+        });
+        
+        const data = await response.json();
+        document.getElementById('upload-status').innerHTML = `✅ <strong>${uploadedFiles.length} files</strong> (${context.length} chars) saved to Infinite Memory!`;
+        document.getElementById('context-size').textContent = `${context.length} chars`;
+        document.getElementById('file-count').textContent = uploadedFiles.length;
+    } catch(e) {
+        document.getElementById('upload-status').innerHTML = `<span class="error">❌ Upload failed: ${e.message}</span>`;
+    }
+}
+
+async function chatAI() {
+    const prompt = document.getElementById('ai-input').value;
+    if (!prompt) return;
+    
+    const output = document.getElementById('ai-output');
+    output.innerHTML = '🤖 Asking Matrix AI...';
+    
+    try {
+        const response = await fetch(`${MATRIX_URL}/ai/chat`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: prompt, sessionId})
+        });
+        
+        const data = await response.json();
+        output.innerHTML = `🤖 Matrix AI:<br><strong>${data.response || data.fallbackResponse}</strong><br><br>📊 Model: ${data.modelInfo?.usedModel || 'Matrix'}`;
+    } catch(e) {
+        output.innerHTML = `<span class="error">❌ AI Error: ${e.message}</span>`;
+    }
+}
+
+async function testAI() {
+    document.getElementById('ai-output').innerHTML = '🧪 Testing AI connection...';
+    try {
+        const response = await fetch(`${MATRIX_URL}/ai/chat`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: 'test connection', sessionId})
+        });
+        document.getElementById('ai-output').textContent = '✅ AI connection WORKING!';
+    } catch(e) {
+        document.getElementById('ai-output').innerHTML = `<span class="error">❌ AI connection failed</span>`;
+    }
+}
+
+async function loadContext() {
+    document.getElementById('context-status').textContent = '📂 Loading context...';
+    try {
+        const response = await fetch(`${SESSION_URL}/session/context?sessionId=${sessionId}`);
+        const data = await response.json();
+        const context = data.infiniteContext?.codebase || '';
+        document.getElementById('context-text').value = context;
+        document.getElementById('context-size').textContent = `${data.totalContextSize || 0} chars`;
+        document.getElementById('context-status').innerHTML = `✅ Loaded <strong>${context.length} chars</strong> from Session Memory!`;
+    } catch(e) {
+        document.getElementById('context-status').innerHTML = `<span class="error">❌ Load failed: ${e.message}</span>`;
+    }
+}
+
+async function clearContext() {
+    if (!confirm('Clear ALL session memory?')) return;
+    document.getElementById('context-status').textContent = '🗑️ Clearing...';
+    try {
+        await fetch(`${SESSION_URL}/session/context`, {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId})
+        });
+        document.getElementById('context-text').value = '';
+        document.getElementById('context-size').textContent = '0 chars';
+        document.getElementById('context-status').textContent = '✅ Memory cleared!';
+    } catch(e) {
+        document.getElementById('context-status').innerHTML = `<span class="error">❌ Clear failed</span>`;
+    }
+}
+
+async function runSandbox() {
+    const code = document.getElementById('py-code').value;
+    document.getElementById('sandbox-output').textContent = '🐍 Running in Matrix Sandbox...';
+    
+    try {
+        const response = await fetch(`${MATRIX_URL}/run?code=${encodeURIComponent(code)}&sessionId=${sessionId}`);
+        const data = await response.json();
+        document.getElementById('sandbox-output').innerHTML = 
+            `🐍 Output:\n${data.output || 'No output'}\n\n❌ Error: ${data.error || 'None'}\n✅ Success: ${data.success ? 'Yes' : 'No'}`;
+    } catch(e) {
+        document.getElementById('sandbox-output').innerHTML = `<span class="error">❌ Sandbox failed: ${e.message}</span>`;
+    }
+}
+
+document.getElementById('session-id').textContent = sessionId;
     </script>
 </body>
 </html>
