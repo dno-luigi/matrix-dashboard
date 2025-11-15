@@ -1,1 +1,142 @@
-console.log('🧩 Matrix Frontend loaded!');
+const MATRIX_URL = 'https://matrix.ai-n.workers.dev';
+const SESSION_URL = 'https://session.ai-n.workers.dev';
+const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {lineNumbers: true, theme: 'default', mode: 'javascript', tabSize: 2});
+let currentTab = 'code';
+let sessionId = 'matrix-ai-' + Date.now();
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+    document.getElementById(`${tab}-tab`).classList.add('active');
+    currentTab = tab;
+}
+
+async function uploadContext() {
+    const context = document.getElementById('context-upload').value;
+    if (!context) return;
+    document.getElementById('context-status').textContent = '💾 Saving to Session Durable Object...';
+    try {
+        const response = await fetch(`${SESSION_URL}/session/context`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sessionId, context: {codebase: context, uploadedAt: new Date().toISOString()}})
+        });
+        const data = await response.json();
+        document.getElementById('context-status').innerHTML = `✅ <strong>${context.length} chars</strong> saved to Infinite Memory!`;
+        document.getElementById('context-size').textContent = `${context.length} chars`;
+        document.getElementById('ai-status').textContent = 'Context Loaded';
+    } catch(e) {
+        document.getElementById('context-status').textContent = `❌ Save failed: ${e.message}`;
+    }
+}
+
+async function loadContext() {
+    document.getElementById('context-status').textContent = '📂 Loading Infinite Context...';
+    try {
+        const response = await fetch(`${SESSION_URL}/session/context?sessionId=${sessionId}`);
+        const data = await response.json();
+        const context = data.infiniteContext?.codebase || data.context || '';
+        document.getElementById('context-upload').value = context;
+        document.getElementById('context-size').textContent = `${data.totalContextSize || 0} chars`;
+        document.getElementById('context-status').innerHTML = `📂 Loaded <strong>${context.length} chars</strong> from Durable Object!`;
+    } catch(e) {
+        document.getElementById('context-status').textContent = `❌ Load failed: ${e.message}`;
+    }
+}
+
+async function clearContext() {
+    if (!confirm('Clear ALL Session Memory?')) return;
+    try {
+        await fetch(`${SESSION_URL}/session/context`, {method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({sessionId})});
+        document.getElementById('context-upload').value = '';
+        document.getElementById('context-size').textContent = '0 chars';
+        document.getElementById('context-status').textContent = '🗑️ Infinite Memory Cleared';
+        document.getElementById('ai-status').textContent = 'No Context';
+    } catch(e) {
+        document.getElementById('context-status').textContent = `❌ Clear failed: ${e.message}`;
+    }
+}
+
+async function aiSuggest() {
+    const code = editor.getValue();
+    let fullContext = '';
+    try {
+        const ctxResp = await fetch(`${SESSION_URL}/session/context?sessionId=${sessionId}`);
+        const ctxData = await ctxResp.json();
+        fullContext = ctxData.infiniteContext?.codebase || '';
+    } catch(e) {}
+    
+    const prompt = `CONTEXT (${fullContext.length} chars): \n\`\`\`\n${fullContext.substring(0,4000)}${fullContext.length>4000?'...':'}\n\`\`\`\n\nIMPROVE:\n\`\`\`${code}\`\`\``;
+    
+    try {
+        const response = await fetch(`${MATRIX_URL}/ai/code`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt, language: document.getElementById('language').value, sessionId})
+        });
+        const data = await response.json();
+        editor.setValue(data.code || code);
+        document.getElementById('ai-output').innerHTML = `✨ AI used <strong>${fullContext.length} chars</strong> context!`;
+    } catch(e) {
+        document.getElementById('ai-output').textContent = `❌ AI failed: ${e.message}`;
+    }
+}
+
+async function generateCode() {
+    const prompt = document.getElementById('ai-prompt').value;
+    if (!prompt) return;
+    document.getElementById('ai-output').textContent = '🤖 Generating...';
+    try {
+        const response = await fetch(`${MATRIX_URL}/ai/code`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt, language: document.getElementById('language').value, sessionId})
+        });
+        const data = await response.json();
+        editor.setValue(data.code || '');
+        document.getElementById('ai-output').innerHTML = `✨ Generated by Matrix AI!`;
+    } catch(e) {
+        document.getElementById('ai-output').textContent = `❌ Generation failed: ${e.message}`;
+    }
+}
+
+async function testCode() {
+    const code = editor.getValue();
+    document.getElementById('sandbox-output').textContent = '🧪 Testing...';
+    try {
+        const response = await fetch(`${MATRIX_URL}/run?code=${encodeURIComponent(code)}`);
+        const data = await response.json();
+        document.getElementById('sandbox-output').innerHTML = `Output: ${data.output}<br>Error: ${data.error}<br>Success: ${data.success?'✅':'❌'}`;
+    } catch(e) {
+        document.getElementById('sandbox-output').textContent = `❌ Test failed: ${e.message}`;
+    }
+}
+
+async function runSandbox() {
+    const code = document.getElementById('sandbox-code').value;
+    document.getElementById('sandbox-output').textContent = '🐍 Running in Matrix Sandbox...';
+    try {
+        const response = await fetch(`${MATRIX_URL}/run?code=${encodeURIComponent(code)}`);
+        const data = await response.json();
+        document.getElementById('sandbox-output').innerHTML = `🐍 Output: ${data.output}<br>❌ Error: ${data.error}<br>✅ Success: ${data.success}`;
+    } catch(e) {
+        document.getElementById('sandbox-output').textContent = `❌ Sandbox failed: ${e.message}`;
+    }
+}
+
+function deployProject() {
+    const name = document.getElementById('project-name').value;
+    if (!name) return;
+    document.getElementById('deploy-status').innerHTML = `🚀 Copy to VPS: <code>deploy ${name}</code>`;
+    navigator.clipboard.writeText(`deploy ${name}`);
+}
+
+function setLanguage(lang) {
+    const modeMap = {javascript: 'javascript', python: 'python', html: 'htmlmixed', css: 'css', typescript: 'javascript'};
+    editor.setOption('mode', modeMap[lang]);
+}
+
+function formatCode() { editor.setValue(editor.getValue()); }
+
+document.getElementById('session-id').textContent = sessionId;
