@@ -1,104 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🧩 Matrix AI Code Assist - Infinite Context</title>
+    <title>🧩 Matrix AI Code Assist</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css">
 </head>
 <body>
     <div class="dashboard">
         <header>
             <h1>🧩 Matrix AI Code Assist</h1>
-            <p>Infinite context via Session Durable Object Memory</p>
+            <p>Infinite context via Session Memory</p>
         </header>
 
-        <div class="editor-section">
-            <div class="editor-tabs">
-                <button class="tab active" onclick="switchTab('code')">💻 Code</button>
-                <button class="tab" onclick="switchTab('ai')">🤖 AI Assist</button>
-                <button class="tab" onclick="switchTab('sandbox')">🐍 Sandbox</button>
-                <button class="tab" onclick="switchTab('context')">🧠 Context Memory</button>
-                <button class="tab" onclick="switchTab('deploy')">🚀 Deploy</button>
-            </div>
-            
-            <!-- CODE TAB -->
-            <div id="code-tab" class="tab-content active">
-                <div class="editor-header">
-                    <select id="language" onchange="setLanguage(this.value)">
-                        <option value="javascript">JavaScript</option>
-                        <option value="python">Python</option>
-                        <option value="html">HTML</option>
-                        <option value="css">CSS</option>
-                        <option value="typescript">TypeScript</option>
-                    </select>
-                    <div class="editor-actions">
-                        <button onclick="aiSuggest()">🤖 AI Suggest (Full Context)</button>
-                        <button onclick="testCode()">🧪 Test</button>
-                        <button onclick="formatCode()">✨ Format</button>
-                    </div>
-                </div>
-                <textarea id="code-editor">// Welcome to your infinite AI coding assistant!
-// Upload your entire codebase to Context tab for superhuman suggestions
-console.log('🧠 Session Memory Active');
-const matrix = {
-    context: 'Infinite via Durable Objects ✅',
-    ai: 'Context-aware 🤖',
-    sandbox: 'Live 🐍'
-};</textarea>
-            </div>
-
-            <!-- AI ASSIST TAB -->
-            <div id="ai-tab" class="tab-content">
-                <div class="ai-input">
-                    <input id="ai-prompt" placeholder="Describe what you need: 'refactor auth', 'add error handling', 'create React component'...">
-                    <button onclick="generateCode()">✨ Generate</button>
-                </div>
-                <div id="ai-output" class="ai-output">Ask me anything - I remember your entire project context!</div>
-            </div>
-
-            <!-- SANDBOX TAB -->
-            <div id="sandbox-tab" class="tab-content">
-                <textarea id="sandbox-code" placeholder="Python for Matrix Sandbox...">print("Hello from infinite context Matrix!")
-import sys
-print(f"Python {sys.version}")
-print("Your Session Memory context is available to AI!")</textarea>
-                <button onclick="runSandbox()">🐍 Run in Sandbox</button>
-                <div id="sandbox-output"></div>
-            </div>
-
-            <!-- CONTEXT MEMORY TAB -->
-            <div id="context-tab" class="tab-content">
-                <div class="context-section">
-                    <h3>🧠 Session Durable Object Memory <span style="font-size:0.8em;color:#aaa">(Infinite Context)</span></h3>
-                    <textarea id="context-upload" placeholder="Upload ENTIRE codebase, docs, specs... Session Memory stores it ALL!"></textarea>
-                    <div class="context-actions">
-                        <button onclick="uploadContext()">💾 Save to Memory</button>
-                        <button onclick="loadContext()">📂 Load Context</button>
-                        <button onclick="clearContext()">🗑️ Clear Memory</button>
-                    </div>
-                    <div id="context-status">Ready to store unlimited context in Durable Object...</div>
-                </div>
-            </div>
-
-            <!-- DEPLOY TAB -->
-            <div id="deploy-tab" class="tab-content">
-                <input id="project-name" placeholder="matrix-admin">
-                <button onclick="deployProject()">🚀 Deploy New Template</button>
-                <div id="deploy-status"></div>
-            </div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('code')">💻 Code</button>
+            <button class="tab" onclick="showTab('ai')">🤖 AI</button>
+            <button class="tab" onclick="showTab('sandbox')">🐍 Sandbox</button>
+            <button class="tab" onclick="showTab('context')">🧠 Context</button>
         </div>
 
-        <div class="status-bar">
-            <span>Session: <strong id="session-id">matrix-revolution-{{timestamp}}</strong></span>
-            <span>Context: <strong id="context-size">0 chars</strong></span>
-            <span>AI: <span id="ai-status">Ready</span></span>
-            <span>Sandbox: <span id="sandbox-status">Ready</span></span>
+        <!-- CODE TAB -->
+        <div id="code" class="tab-content active">
+            <select id="lang" onchange="changeLang(this.value)">
+                <option value="js">JavaScript</option>
+                <option value="py">Python</option>
+            </select>
+            <textarea id="code-editor" placeholder="Write code here...">// Matrix AI Code Assist
+console.log('Tabs working!');</textarea>
+            <button onclick="testCode()">🧪 Test Code</button>
+            <button onclick="aiHelp()">🤖 AI Help</button>
         </div>
+
+        <!-- AI TAB -->
+        <div id="ai" class="tab-content">
+            <input id="ai-input" placeholder="Ask AI: fix bug, add feature...">
+            <button onclick="aiGenerate()">✨ Generate</button>
+            <div id="ai-result">AI ready...</div>
+        </div>
+
+        <!-- SANDBOX TAB -->
+        <div id="sandbox" class="tab-content">
+            <textarea id="py-code" placeholder="Python for sandbox...">print('Hello Matrix!')</textarea>
+            <button onclick="runPython()">🐍 Run Python</button>
+            <div id="py-output"></div>
+        </div>
+
+        <!-- CONTEXT TAB -->
+        <div id="context" class="tab-content">
+            <textarea id="context-text" placeholder="Paste entire codebase here..."></textarea>
+            <button onclick="saveContext()">💾 Save Context</button>
+            <button onclick="loadContext()">📂 Load</button>
+            <div id="context-info">Context ready</div>
+        </div>
+
+        <div class="status">Session: <span id="session">loading...</span></div>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/python/python.min.js"></script>
     <script src="/js/main.js"></script>
 </body>
 </html>
