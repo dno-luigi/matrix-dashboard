@@ -1,205 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>🧩 Matrix AI - File Upload + Chat</title>
-    <style>*{margin:0;padding:0;box-sizing:border-box}body{background:linear-gradient(135deg,#0f0f23,#1a1a3e);color:#e2e2e2;font-family:sans-serif;padding:20px;min-height:100vh}.dashboard{max-width:900px;margin:0 auto}header{text-align:center;padding:40px 20px;background:rgba(255,255,255,0.1);border-radius:20px;margin-bottom:30px}h1{font-size:2.5rem;color:#4ade80}.tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px}.tab{flex:1;padding:15px;background:rgba(255,255,255,0.1);border:none;color:white;border-radius:10px;cursor:pointer;font-size:14px}.tab.active{background:#4ade80;color:black}.tab-content{display:none;background:rgba(255,255,255,0.05);padding:25px;border-radius:15px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.1)}.tab-content.active{display:block}textarea,input{width:100%;padding:15px;background:rgba(0,0,0,0.5);border:1px solid #4ade80;border-radius:10px;color:white;font-family:monospace;font-size:14px;margin-bottom:15px;box-sizing:border-box}textarea{height:200px;resize:vertical}button{padding:12px 20px;background:#4ade80;color:black;border:none;border-radius:10px;cursor:pointer;margin:5px;font-weight:bold;transition:all .3s}button:hover{transform:scale(1.05);box-shadow:0 5px 15px rgba(74,222,128,.4)}.button-row{display:flex;flex-wrap:wrap;gap:10px}.status{padding:15px;background:rgba(0,0,0,0.4);border-radius:10px;font-size:14px}.output{background:rgba(74,222,128,0.2);padding:15px;border-radius:10px;border-left:4px solid #4ade80;margin-top:10px;white-space:pre-wrap;font-family:monospace;max-height:300px;overflow:auto}.error{background:rgba(239,68,68,0.2);border-left-color:#ef4444;color:#ef4444}.file-upload{display:flex;flex-direction:column;gap:15px}.file-input-wrapper{position:relative;display:inline-block;width:100%}.file-input-wrapper input[type=file]{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer}.file-label{display:inline-block;padding:15px;background:rgba(74,222,128,0.2);border:2px dashed #4ade80;border-radius:10px;text-align:center;cursor:pointer;width:100%;transition:all .3s}.file-label:hover{background:rgba(74,222,128,0.4)}.file-info{margin-top:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;font-family:monospace;font-size:12px;max-height:100px;overflow:auto}@media(max-width:600px){.tabs{flex-direction:column}.tab{flex:none}}</style>
+    <title>🧩 Matrix Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    <div class="dashboard">
-        <header><h1>🧩 Matrix AI Code Assist</h1><p>📁 File Upload + AI Chat + Infinite Context</p></header>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('upload')">📁 Upload</button>
-            <button class="tab" onclick="showTab('ai')">🤖 AI Chat</button>
-            <button class="tab" onclick="showTab('context')">🧠 Context</button>
-            <button class="tab" onclick="showTab('sandbox')">🐍 Sandbox</button>
-        </div>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-cube"></i> Matrix Dashboard <span id="sessionIdDisplay">-</span></h1>
+            <nav class="tabs">
+                <button class="tab-btn active" data-tab="dashboard"><i class="fas fa-home"></i> Dashboard</button>
+                <button class="tab-btn" data-tab="chat"><i class="fas fa-comments"></i> AI Chat</button>
+                <button class="tab-btn" data-tab="code"><i class="fas fa-code"></i> Code Gen</button>
+                <button class="tab-btn" data-tab="terminal"><i class="fas fa-terminal"></i> Sandbox Terminal</button>
+                <button class="tab-btn" data-tab="memory"><i class="fas fa-brain"></i> Session Memory</button>
+                <button class="tab-btn" data-tab="upload"><i class="fas fa-upload"></i> File Upload</button>
+            </nav>
+        </header>
 
-        <!-- FILE UPLOAD TAB -->
-        <div id="upload" class="tab-content active">
-            <h3>📁 Upload Codebase/Project Files</h3>
-            <div class="file-upload">
-                <div class="file-input-wrapper">
-                    <input type="file" id="file-input" multiple accept=".js,.ts,.py,.html,.css,.json,.txt,.md">
-                    <label for="file-input" class="file-label">📁 Click to upload files<br><small>Supports JS, Python, HTML, CSS, JSON, TXT, MD</small></label>
+        <main>
+            <!-- Dashboard -->
+            <div id="dashboard" class="tab-content active">
+                <div class="cards">
+                    <div class="card">
+                        <h3><i class="fas fa-cube"></i> Matrix Sandbox</h3>
+                        <p>Execute Python, manage files, process HTML.</p>
+                        <button onclick="loadApiInfo()">API Info</button>
+                    </div>
+                    <div class="card">
+                        <h3><i class="fas fa-comments"></i> AI Proxy</h3>
+                        <p>Chat & code gen with full context.</p>
+                    </div>
+                    <div class="card">
+                        <h3><i class="fas fa-brain"></i> Session Memory</h3>
+                        <p>Unlimited context storage (DO).</p>
+                        <button onclick="loadContext()">Load Context</button>
+                    </div>
                 </div>
-                <div id="file-list" class="file-info">No files selected</div>
-                <button onclick="uploadFiles()">💾 Save to Session Memory</button>
+                <pre id="apiInfo"></pre>
             </div>
-            <div id="upload-status" class="output">Ready to upload...</div>
-        </div>
 
-        <!-- AI CHAT TAB -->
-        <div id="ai" class="tab-content">
-            <input id="ai-input" placeholder="Ask about your uploaded code: 'refactor auth', 'add login'...">
-            <div class="button-row">
-                <button onclick="chatAI()">💬 Ask Matrix AI</button>
-                <button onclick="testAI()">🧪 Test Connection</button>
+            <!-- AI Chat -->
+            <div id="chat" class="tab-content">
+                <div class="chat-container">
+                    <div id="chatMessages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="chatInput" placeholder="Ask Neo anything... (uses full session context)">
+                        <button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
             </div>
-            <div id="ai-output" class="output">AI ready! Upload files first for context-aware responses</div>
-        </div>
 
-        <!-- CONTEXT TAB -->
-        <div id="context" class="tab-content">
-            <textarea id="context-text" placeholder="Current context will appear here..."></textarea>
-            <div class="button-row">
-                <button onclick="loadContext()">📂 Load Context</button>
-                <button onclick="clearContext()">🗑️ Clear All</button>
+            <!-- Code Gen -->
+            <div id="code" class="tab-content">
+                <textarea id="codePrompt" placeholder="Describe code... (e.g., 'React component for quantum UI')"></textarea>
+                <select id="codeLang">
+                    <option value="javascript">JavaScript</option>
+                    <option value="python">Python</option>
+                    <option value="html">HTML/CSS</option>
+                </select>
+                <button onclick="generateCode()">Generate Code</button>
+                <pre id="codeOutput"><code></code></pre>
             </div>
-            <div id="context-status" class="output">No context loaded (0 chars)</div>
-        </div>
 
-        <!-- SANDBOX TAB -->
-        <div id="sandbox" class="tab-content">
-            <textarea id="py-code">print("Hello from Matrix Sandbox!")
-print("Your context is available to AI!")</textarea>
-            <button onclick="runSandbox()">🐍 Run Python</button>
-            <div id="sandbox-output" class="output">Click Run Python to test sandbox</div>
-        </div>
+            <!-- Sandbox Terminal -->
+            <div id="terminal" class="tab-content">
+                <div id="terminalOutput" class="terminal"></div>
+                <div class="terminal-input">
+                    <span>$</span><input type="text" id="termInput" placeholder="python3 -c 'print(2+2)' or file?action=list">
+                    <button onclick="runCommand()"><i class="fas fa-play"></i></button>
+                </div>
+            </div>
 
-        <div class="status">
-            Session: <strong id="session-id">matrix-demo</strong> | 
-            Files: <strong id="file-count">0</strong> | 
-            Context: <strong id="context-size">0 chars</strong>
-        </div>
+            <!-- Session Memory -->
+            <div id="memory" class="tab-content">
+                <button onclick="loadContext()">🔄 Load Context</button>
+                <button onclick="clearSession()">🗑️ Clear Session</button>
+                <pre id="contextDisplay">Loading...</pre>
+            </div>
+
+            <!-- File Upload -->
+            <div id="upload" class="tab-content">
+                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drop files here or click to upload<br>Text/HTML → Session Memory (unlimited context!)</p>
+                </div>
+                <input type="file" id="fileInput" multiple style="display:none;" accept=".txt,.html,.md">
+                <div id="uploadStatus"></div>
+            </div>
+        </main>
     </div>
-    <script>
-let sessionId = 'matrix-' + Date.now();
-let uploadedFiles = [];
-let currentTab = 'upload';
 
-const MATRIX_URL = 'https://matrix.ai-n.workers.dev';
-const SESSION_URL = 'https://session.ai-n.workers.dev';
-
-function showTab(tab) {
-    document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
-    event.target.classList.add('active');
-    document.getElementById(tab).classList.add('active');
-    currentTab = tab;
-}
-
-document.getElementById('file-input').addEventListener('change', function(e) {
-    uploadedFiles = Array.from(e.target.files);
-    let fileList = uploadedFiles.map(f => `${f.name} (${(f.size/1024).toFixed(1)}KB)`).join('\n');
-    document.getElementById('file-list').textContent = uploadedFiles.length ? 
-        `Selected ${uploadedFiles.length} files:\n${fileList}` : 'No files selected';
-    document.getElementById('file-count').textContent = uploadedFiles.length;
-});
-
-async function uploadFiles() {
-    if (!uploadedFiles.length) {
-        document.getElementById('upload-status').innerHTML = '<span class="error">No files selected!</span>';
-        return;
-    }
-    
-    document.getElementById('upload-status').textContent = '📁 Uploading to Session Memory...';
-    
-    let context = '';
-    for (let file of uploadedFiles) {
-        const text = await file.text();
-        context += `\n\n--- ${file.name} (${(file.size/1024).toFixed(1)}KB) ---\n${text}`;
-    }
-    
-    try {
-        const response = await fetch(`${SESSION_URL}/session/context`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                sessionId, 
-                context: {codebase: context, files: uploadedFiles.length, uploadedAt: new Date().toISOString()}
-            })
-        });
-        
-        const data = await response.json();
-        document.getElementById('upload-status').innerHTML = `✅ <strong>${uploadedFiles.length} files</strong> (${context.length} chars) saved to Infinite Memory!`;
-        document.getElementById('context-size').textContent = `${context.length} chars`;
-        document.getElementById('file-count').textContent = uploadedFiles.length;
-    } catch(e) {
-        document.getElementById('upload-status').innerHTML = `<span class="error">❌ Upload failed: ${e.message}</span>`;
-    }
-}
-
-async function chatAI() {
-    const prompt = document.getElementById('ai-input').value;
-    if (!prompt) return;
-    
-    const output = document.getElementById('ai-output');
-    output.innerHTML = '🤖 Asking Matrix AI...';
-    
-    try {
-        const response = await fetch(`${MATRIX_URL}/ai/chat`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({message: prompt, sessionId})
-        });
-        
-        const data = await response.json();
-        output.innerHTML = `🤖 Matrix AI:<br><strong>${data.response || data.fallbackResponse}</strong><br><br>📊 Model: ${data.modelInfo?.usedModel || 'Matrix'}`;
-    } catch(e) {
-        output.innerHTML = `<span class="error">❌ AI Error: ${e.message}</span>`;
-    }
-}
-
-async function testAI() {
-    document.getElementById('ai-output').innerHTML = '🧪 Testing AI connection...';
-    try {
-        const response = await fetch(`${MATRIX_URL}/ai/chat`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({message: 'test connection', sessionId})
-        });
-        document.getElementById('ai-output').textContent = '✅ AI connection WORKING!';
-    } catch(e) {
-        document.getElementById('ai-output').innerHTML = `<span class="error">❌ AI connection failed</span>`;
-    }
-}
-
-async function loadContext() {
-    document.getElementById('context-status').textContent = '📂 Loading context...';
-    try {
-        const response = await fetch(`${SESSION_URL}/session/context?sessionId=${sessionId}`);
-        const data = await response.json();
-        const context = data.infiniteContext?.codebase || '';
-        document.getElementById('context-text').value = context;
-        document.getElementById('context-size').textContent = `${data.totalContextSize || 0} chars`;
-        document.getElementById('context-status').innerHTML = `✅ Loaded <strong>${context.length} chars</strong> from Session Memory!`;
-    } catch(e) {
-        document.getElementById('context-status').innerHTML = `<span class="error">❌ Load failed: ${e.message}</span>`;
-    }
-}
-
-async function clearContext() {
-    if (!confirm('Clear ALL session memory?')) return;
-    document.getElementById('context-status').textContent = '🗑️ Clearing...';
-    try {
-        await fetch(`${SESSION_URL}/session/context`, {
-            method: 'DELETE',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({sessionId})
-        });
-        document.getElementById('context-text').value = '';
-        document.getElementById('context-size').textContent = '0 chars';
-        document.getElementById('context-status').textContent = '✅ Memory cleared!';
-    } catch(e) {
-        document.getElementById('context-status').innerHTML = `<span class="error">❌ Clear failed</span>`;
-    }
-}
-
-async function runSandbox() {
-    const code = document.getElementById('py-code').value;
-    document.getElementById('sandbox-output').textContent = '🐍 Running in Matrix Sandbox...';
-    
-    try {
-        const response = await fetch(`${MATRIX_URL}/run?code=${encodeURIComponent(code)}&sessionId=${sessionId}`);
-        const data = await response.json();
-        document.getElementById('sandbox-output').innerHTML = 
-            `🐍 Output:\n${data.output || 'No output'}\n\n❌ Error: ${data.error || 'None'}\n✅ Success: ${data.success ? 'Yes' : 'No'}`;
-    } catch(e) {
-        document.getElementById('sandbox-output').innerHTML = `<span class="error">❌ Sandbox failed: ${e.message}</span>`;
-    }
-}
-
-document.getElementById('session-id').textContent = sessionId;
-    </script>
+    <script src="/js/main.js"></script>
 </body>
 </html>
