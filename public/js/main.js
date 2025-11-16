@@ -1,142 +1,128 @@
-const MATRIX_URL = 'https://matrix.ai-n.workers.dev';
-const SESSION_URL = 'https://session.ai-n.workers.dev';
-const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {lineNumbers: true, theme: 'default', mode: 'javascript', tabSize: 2});
-let currentTab = 'code';
-let sessionId = 'matrix-ai-' + Date.now();
+// 🔧 CONFIG - Update these URLs!
+const CONFIG = {
+    MATRIX_WORKER_URL: 'https://matrix.ai-n.workers.dev',  // Your matrix worker
+    SESSION_WORKER_URL: 'https://session.ai-n.workers.dev'  // Your session worker
+};
 
-function switchTab(tab) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
-    document.getElementById(`${tab}-tab`).classList.add('active');
-    currentTab = tab;
-}
+let sessionId = localStorage.getItem('matrixSessionId') || `session-${Date.now()}`;
+localStorage.setItem('matrixSessionId', sessionId);
+document.getElementById('sessionIdDisplay').textContent = sessionId.slice(0,8);
 
-async function uploadContext() {
-    const context = document.getElementById('context-upload').value;
-    if (!context) return;
-    document.getElementById('context-status').textContent = '💾 Saving to Session Durable Object...';
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+    };
+});
+
+// API Helper
+async function apiCall(url, options = {}) {
     try {
-        const response = await fetch(`${SESSION_URL}/session/context`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({sessionId, context: {codebase: context, uploadedAt: new Date().toISOString()}})
+        const res = await fetch(url, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', ...options.headers }
         });
-        const data = await response.json();
-        document.getElementById('context-status').innerHTML = `✅ <strong>${context.length} chars</strong> saved to Infinite Memory!`;
-        document.getElementById('context-size').textContent = `${context.length} chars`;
-        document.getElementById('ai-status').textContent = 'Context Loaded';
-    } catch(e) {
-        document.getElementById('context-status').textContent = `❌ Save failed: ${e.message}`;
-    }
+        return await res.json();
+    } catch (e) { console.error(e); return { error: e.message }; }
 }
 
+// Dashboard: API Info
+async function loadApiInfo() {
+    const res = await fetch(`${CONFIG.MATRIX_WORKER_URL}`);
+    document.getElementById('apiInfo').textContent = await res.text();
+}
+
+// Session Memory
 async function loadContext() {
-    document.getElementById('context-status').textContent = '📂 Loading Infinite Context...';
-    try {
-        const response = await fetch(`${SESSION_URL}/session/context?sessionId=${sessionId}`);
-        const data = await response.json();
-        const context = data.infiniteContext?.codebase || data.context || '';
-        document.getElementById('context-upload').value = context;
-        document.getElementById('context-size').textContent = `${data.totalContextSize || 0} chars`;
-        document.getElementById('context-status').innerHTML = `📂 Loaded <strong>${context.length} chars</strong> from Durable Object!`;
-    } catch(e) {
-        document.getElementById('context-status').textContent = `❌ Load failed: ${e.message}`;
-    }
+    const res = await apiCall(`${CONFIG.SESSION_WORKER_URL}/session/context?sessionId=${sessionId}`);
+    document.getElementById('contextDisplay').textContent = JSON.stringify(res, null, 2);
+}
+async function clearSession() {
+    await apiCall(`${CONFIG.SESSION_WORKER_URL}/session/clear`, {
+        method: 'POST',
+        body: JSON.stringify({ sessionId })
+    });
+    loadContext();
 }
 
-async function clearContext() {
-    if (!confirm('Clear ALL Session Memory?')) return;
-    try {
-        await fetch(`${SESSION_URL}/session/context`, {method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({sessionId})});
-        document.getElementById('context-upload').value = '';
-        document.getElementById('context-size').textContent = '0 chars';
-        document.getElementById('context-status').textContent = '🗑️ Infinite Memory Cleared';
-        document.getElementById('ai-status').textContent = 'No Context';
-    } catch(e) {
-        document.getElementById('context-status').textContent = `❌ Clear failed: ${e.message}`;
-    }
-}
+// AI Chat
+async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    addMessage('user', msg);
+    input.value = '';
 
-async function aiSuggest() {
-    const code = editor.getValue();
-    let fullContext = '';
-    try {
-        const ctxResp = await fetch(`${SESSION_URL}/session/context?sessionId=${sessionId}`);
-        const ctxData = await ctxResp.json();
-        fullContext = ctxData.infiniteContext?.codebase || '';
-    } catch(e) {}
-    
-    const prompt = `CONTEXT (${fullContext.length} chars): \n\`\`\`\n${fullContext.substring(0,4000)}${fullContext.length>4000?'...':'}\n\`\`\`\n\nIMPROVE:\n\`\`\`${code}\`\`\``;
-    
-    try {
-        const response = await fetch(`${MATRIX_URL}/ai/code`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({prompt, language: document.getElementById('language').value, sessionId})
-        });
-        const data = await response.json();
-        editor.setValue(data.code || code);
-        document.getElementById('ai-output').innerHTML = `✨ AI used <strong>${fullContext.length} chars</strong> context!`;
-    } catch(e) {
-        document.getElementById('ai-output').textContent = `❌ AI failed: ${e.message}`;
-    }
+    const res = await apiCall(`${CONFIG.MATRIX_WORKER_URL}/ai/chat`, {
+        method: 'POST',
+        body: JSON.stringify({ message: msg, sessionId })
+    });
+    addMessage('assistant', res.response || res.error || 'Error');
 }
+function addMessage(role, content) {
+    const msgs = document.getElementById('chatMessages');
+    msgs.innerHTML += `<div class="message ${role}">${content}</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+}
+document.getElementById('chatInput').addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
 
+// Code Gen
 async function generateCode() {
-    const prompt = document.getElementById('ai-prompt').value;
-    if (!prompt) return;
-    document.getElementById('ai-output').textContent = '🤖 Generating...';
-    try {
-        const response = await fetch(`${MATRIX_URL}/ai/code`, {
+    const prompt = document.getElementById('codePrompt').value;
+    const lang = document.getElementById('codeLang').value;
+    const res = await apiCall(`${CONFIG.MATRIX_WORKER_URL}/ai/code`, {
+        method: 'POST',
+        body: JSON.stringify({ prompt, language: lang, sessionId })
+    });
+    document.querySelector('#codeOutput code').textContent = res.code || res.error || '// No code generated';
+}
+
+// Sandbox Terminal
+async function runCommand() {
+    const input = document.getElementById('termInput');
+    const cmd = input.value.trim();
+    input.value = '';
+
+    const term = document.getElementById('terminalOutput');
+    term.innerHTML += `\n$ ${cmd}\n`;
+    
+    let url = `${CONFIG.MATRIX_WORKER_URL}/run?code=${encodeURIComponent(cmd)}`;
+    if (cmd.includes('file?action=')) url = `${CONFIG.MATRIX_WORKER_URL}${cmd}`;
+    
+    const res = await apiCall(url.replace('code=', ''));
+    term.innerHTML += `${JSON.stringify(res, null, 2)}\n`;
+    term.scrollTop = term.scrollHeight;
+}
+
+// File Upload → Session Memory
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+    const status = document.getElementById('uploadStatus');
+    status.textContent = 'Processing...';
+    for (let file of Array.from(e.target.files)) {
+        const text = await file.text();
+        // Append to interactions as user context
+        await apiCall(`${CONFIG.SESSION_WORKER_URL}/session/add-interaction`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({prompt, language: document.getElementById('language').value, sessionId})
+            body: JSON.stringify({
+                sessionId,
+                user: `CONTEXT WALL: ${file.name}\n\n${text.substring(0, 50000)}...`  // Chunk if huge
+            })
         });
-        const data = await response.json();
-        editor.setValue(data.code || '');
-        document.getElementById('ai-output').innerHTML = `✨ Generated by Matrix AI!`;
-    } catch(e) {
-        document.getElementById('ai-output').textContent = `❌ Generation failed: ${e.message}`;
     }
-}
+    status.textContent = '✅ Uploaded to Session Memory! Reload context.';
+    loadContext();
+});
 
-async function testCode() {
-    const code = editor.getValue();
-    document.getElementById('sandbox-output').textContent = '🧪 Testing...';
-    try {
-        const response = await fetch(`${MATRIX_URL}/run?code=${encodeURIComponent(code)}`);
-        const data = await response.json();
-        document.getElementById('sandbox-output').innerHTML = `Output: ${data.output}<br>Error: ${data.error}<br>Success: ${data.success?'✅':'❌'}`;
-    } catch(e) {
-        document.getElementById('sandbox-output').textContent = `❌ Test failed: ${e.message}`;
-    }
-}
+// Drag/Drop
+document.querySelector('.upload-zone').addEventListener('dragover', e => e.preventDefault());
+document.querySelector('.upload-zone').addEventListener('drop', e => {
+    e.preventDefault();
+    document.getElementById('fileInput').files = e.dataTransfer.files;
+    document.getElementById('fileInput').dispatchEvent(new Event('change'));
+});
 
-async function runSandbox() {
-    const code = document.getElementById('sandbox-code').value;
-    document.getElementById('sandbox-output').textContent = '🐍 Running in Matrix Sandbox...';
-    try {
-        const response = await fetch(`${MATRIX_URL}/run?code=${encodeURIComponent(code)}`);
-        const data = await response.json();
-        document.getElementById('sandbox-output').innerHTML = `🐍 Output: ${data.output}<br>❌ Error: ${data.error}<br>✅ Success: ${data.success}`;
-    } catch(e) {
-        document.getElementById('sandbox-output').textContent = `❌ Sandbox failed: ${e.message}`;
-    }
-}
-
-function deployProject() {
-    const name = document.getElementById('project-name').value;
-    if (!name) return;
-    document.getElementById('deploy-status').innerHTML = `🚀 Copy to VPS: <code>deploy ${name}</code>`;
-    navigator.clipboard.writeText(`deploy ${name}`);
-}
-
-function setLanguage(lang) {
-    const modeMap = {javascript: 'javascript', python: 'python', html: 'htmlmixed', css: 'css', typescript: 'javascript'};
-    editor.setOption('mode', modeMap[lang]);
-}
-
-function formatCode() { editor.setValue(editor.getValue()); }
-
-document.getElementById('session-id').textContent = sessionId;
+// Init
+loadContext();
